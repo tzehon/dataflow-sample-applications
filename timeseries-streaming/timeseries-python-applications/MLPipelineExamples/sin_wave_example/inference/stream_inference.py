@@ -40,8 +40,10 @@ def run(args, pipeline_args):
     with beam.Pipeline(options=pipeline_options) as pipeline:
         _ = (
                 pipeline
-                | 'ReadTFExample' >> beam.io.gcp.pubsub.ReadStringsFromPubSub(subscription=args.pubsub_subscription)
-                | 'ParseExamples' >> beam.Map(lambda x: Parse(x, tf.train.Example()))
+                | 'ReadTFExample' >> beam.io.gcp.pubsub.ReadStringsFromPubSub(
+                        subscription=args.pubsub_subscription)
+                | 'ParseExamples' >>
+                beam.Map(lambda x: Parse(x, tf.train.Example()))
                 | RunInference(
                         model_spec_pb2.InferenceSpecType(
                                 saved_model_spec=model_spec_pb2.SavedModelSpec(
@@ -50,6 +52,7 @@ def run(args, pipeline_args):
                 | beam.ParDo(encoder_decoder_preprocessing.ProcessReturn())
                 | beam.ParDo(encoder_decoder_preprocessing.CheckAnomalous())
                 | beam.ParDo(print))
+
 
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.INFO)
@@ -64,7 +67,8 @@ if __name__ == '__main__':
             dest='pubsub_subscription',
             required=True,
             help=
-            'PubSub Subscription of the JSON samples produced by the streaming pipeline')
+            'PubSub Subscription of the JSON samples produced by the streaming pipeline'
+    )
     parser.add_argument(
             '--saved_model_location',
             dest='saved_model_location',

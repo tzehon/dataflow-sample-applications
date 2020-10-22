@@ -19,7 +19,7 @@ setuptools.setup(
     name='timeseries-sample-examples',
     version='0.3.1-sample',
     install_requires=[
-        'timeseries-sample'
+        'timeseries-sample','kfp==1.0.3'
     ],
     python_requires='>=3.7',
     packages=setuptools.find_namespace_packages()

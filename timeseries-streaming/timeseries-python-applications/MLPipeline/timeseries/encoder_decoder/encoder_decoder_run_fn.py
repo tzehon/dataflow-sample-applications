@@ -104,10 +104,12 @@ def run_fn(fn_args: TrainerFnArgs):
             outer_units=fn_args.outer_units,
             inner_units=fn_args.inner_units)
 
+    steps_per_epoch = fn_args.training_example_count / fn_args.train_batches
+
     model.fit(
             train_dataset,
-            epochs=fn_args.epochs,
-            steps_per_epoch=fn_args.train_steps,
+            epochs=int(fn_args.train_steps / steps_per_epoch),
+            steps_per_epoch=steps_per_epoch,
             validation_data=eval_dataset,
             validation_steps=fn_args.eval_steps)
 

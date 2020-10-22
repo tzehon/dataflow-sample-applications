@@ -35,21 +35,24 @@ def run(args, pipeline_args):
     Run inference pipeline using data generated from streaming pipeline.
     """
     pipeline_options = PipelineOptions(
-        pipeline_args, save_main_session=True, streaming=False)
+            pipeline_args, save_main_session=True, streaming=False)
 
     with beam.Pipeline(options=pipeline_options) as pipeline:
         _ = (
                 pipeline
                 | 'ReadTFExample' >> beam.io.tfrecordio.ReadFromTFRecord(
-            file_pattern=args.tfrecord_folder)
+                        file_pattern=args.tfrecord_folder)
                 | 'ParseExamples' >> beam.Map(tf.train.Example.FromString)
                 | RunInference(
-            model_spec_pb2.InferenceSpecType(
-                saved_model_spec=model_spec_pb2.SavedModelSpec(
-                    signature_name=['serving_default'],
-                    model_path=args.saved_model_location)))
-                | beam.ParDo(process_encdec_inf_rtn.ProcessReturn(config=config.MODEL_CONFIG))
-                | beam.ParDo(process_encdec_inf_rtn.CheckAnomalous(threshold=0.07))
+                        model_spec_pb2.InferenceSpecType(
+                                saved_model_spec=model_spec_pb2.SavedModelSpec(
+                                        signature_name=['serving_default'],
+                                        model_path=args.saved_model_location)))
+                | beam.ParDo(
+                        process_encdec_inf_rtn.ProcessReturn(
+                                config=config.MODEL_CONFIG))
+                | beam.ParDo(
+                        process_encdec_inf_rtn.CheckAnomalous(threshold=0.07))
                 | beam.ParDo(print))
 
 
@@ -57,21 +60,24 @@ if __name__ == '__main__':
     logging.getLogger().setLevel(logging.INFO)
     import argparse
 
-    sys.argv.append(f"--saved_model_location=/{config.DATA_ROOT}/serving_model_dir/")
-    sys.argv.append(f"--tfrecord_folder=/{config.DATA_ROOT}/simple-data-5-step/tfx-data/data/")
+    sys.argv.append(
+            f"--saved_model_location=/{config.DATA_ROOT}/serving_model_dir/")
+    sys.argv.append(
+            f"--tfrecord_folder=/{config.DATA_ROOT}/simple-data-5-step/tfx-data/data/"
+    )
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--tfrecord_folder',
-        dest='tfrecord_folder',
-        required=True,
-        help=
-        'Location of the TFRecord files produced by the streaming pipeline')
+            '--tfrecord_folder',
+            dest='tfrecord_folder',
+            required=True,
+            help=
+            'Location of the TFRecord files produced by the streaming pipeline')
     parser.add_argument(
-        '--saved_model_location',
-        dest='saved_model_location',
-        required=True,
-        help='location of save model to be used with this inference pipeline'
+            '--saved_model_location',
+            dest='saved_model_location',
+            required=True,
+            help='location of save model to be used with this inference pipeline'
     )
 
     known_args, pipeline_args = parser.parse_known_args()
