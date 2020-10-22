@@ -49,7 +49,7 @@ def run(args, pipeline_args):
                     signature_name=['serving_default'],
                     model_path=args.saved_model_location)))
                 | beam.ParDo(process_encdec_inf_rtn.ProcessReturn(config=config.MODEL_CONFIG))
-                | beam.ParDo(process_encdec_inf_rtn.CheckAnomalous())
+                | beam.ParDo(process_encdec_inf_rtn.CheckAnomalous(threshold=0.07))
                 | beam.ParDo(print))
 
 

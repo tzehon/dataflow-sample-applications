@@ -156,7 +156,7 @@ class ProcessReturn(beam.DoFn):
             result.update({'feature_results': feature_results})
             processed_inputs.append(result)
 
-        batch_pos += 1
+            batch_pos += 1
 
         # Add back windows
         windowed_value = []
