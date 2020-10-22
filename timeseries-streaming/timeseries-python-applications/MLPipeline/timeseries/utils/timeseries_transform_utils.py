@@ -23,7 +23,8 @@ MONTH = 30.0 * 86400.0
 YEAR = 365.2425 * 86400.0
 
 
-def create_feature_list_from_list(features: [Text], config: Dict[Text, Any]) -> [Text]:
+def create_feature_list_from_list(features: [Text],
+                                  config: Dict[Text, Any]) -> [Text]:
     """
     Given a list of features, create the features defined in config to be added to the model.
     The values are returned in lexical order, to allow for post-inference processing
@@ -39,7 +40,8 @@ def create_feature_list_from_list(features: [Text], config: Dict[Text, Any]) -> 
         time_features = []
         for k in feature_list:
             if k.endswith('_TIMESTAMP'):
-                time_feature = create_time_coordinate_features_names(k, config=config)
+                time_feature = create_time_coordinate_features_names(
+                        k, config=config)
                 time_features.extend(time_feature)
                 # Remove the original value from the list
                 model_features.remove(k)
@@ -50,7 +52,8 @@ def create_feature_list_from_list(features: [Text], config: Dict[Text, Any]) -> 
     return model_features
 
 
-def create_feature_list_from_dict(features: Dict[Text, Any], config: Dict[Text, Any]) -> Dict[Text, Any]:
+def create_feature_list_from_dict(
+        features: Dict[Text, Any], config: Dict[Text, Any]) -> Dict[Text, Any]:
     """
     Produce a feature value dict, create the features defined in config to be added to the model.
     """
@@ -60,12 +63,19 @@ def create_feature_list_from_dict(features: Dict[Text, Any], config: Dict[Text, 
     model_features = {k: features[k] for k in features if k in feature_list}
 
     if config['enable_timestamp_features']:
-        timestamp_feature_list = [k for k in model_features if k.endswith('_TIMESTAMP')]
-        model_features = {k: v for k, v in model_features.items() if not k.endswith('_TIMESTAMP')}
+        timestamp_feature_list = [
+                k for k in model_features if k.endswith('_TIMESTAMP')
+        ]
+        model_features = {
+                k: v
+                for k,
+                v in model_features.items() if not k.endswith('_TIMESTAMP')
+        }
 
-        timestamp_features = [create_time_coordinate_features((k, features[k]), config) for k in timestamp_feature_list
-                              if
-                              k.endswith('_TIMESTAMP')]
+        timestamp_features = [
+                create_time_coordinate_features((k, features[k]), config)
+                for k in timestamp_feature_list if k.endswith('_TIMESTAMP')
+        ]
 
         for k in timestamp_features:
             model_features.update(k)
@@ -73,15 +83,19 @@ def create_feature_list_from_dict(features: Dict[Text, Any], config: Dict[Text, 
     return model_features
 
 
-def create_time_coordinate_features_names(feature: Text, config: Dict[Text, Any]) -> [Text]:
+def create_time_coordinate_features_names(
+        feature: Text, config: Dict[Text, Any]) -> [Text]:
     """
     For any timeseries feature, return sin and cos features to the resolution dictated via 'time_features'.
     """
     if not feature.endswith("_TIMESTAMP"):
         raise ValueError(f'Feature {feature} does not end with TIMESTAMP')
     requested_time_features = config['time_features']
-    if not set(requested_time_features).issubset(['MINUTE', 'HOUR', 'DAY', 'MONTH', 'YEAR']):
-        raise ValueError(f'Only MINUTE HOUR DAY YEAR are supported not {requested_time_features}')
+    if not set(requested_time_features).issubset(
+            ['MINUTE', 'HOUR', 'DAY', 'MONTH', 'YEAR']):
+        raise ValueError(
+                f'Only MINUTE HOUR DAY YEAR are supported not {requested_time_features}'
+        )
 
     feature_name = removesuffix(feature, '_TIMESTAMP')
 
@@ -92,13 +106,18 @@ def create_time_coordinate_features_names(feature: Text, config: Dict[Text, Any]
     return cos_sin_feature
 
 
-def create_time_coordinate_features(features: Tuple[Text, Any], config: Dict[Text, Any]):
+def create_time_coordinate_features(
+        features: Tuple[Text, Any], config: Dict[Text, Any]):
     """
     For any timeseries feature, return sin and cos features to the resolution dictated via 'time_features'.
     """
-    cos_sin_feature = create_time_coordinate_features_names(feature=features[0], config=config)
+    cos_sin_feature = create_time_coordinate_features_names(
+            feature=features[0], config=config)
 
-    return {k: tf.cast(create_time_coordinate(k, features[1]), tf.float32) for k in cos_sin_feature}
+    return {
+            k: tf.cast(create_time_coordinate(k, features[1]), tf.float32)
+            for k in cos_sin_feature
+    }
 
 
 def create_time_coordinate(feature: str, timestamp_int64: Any):

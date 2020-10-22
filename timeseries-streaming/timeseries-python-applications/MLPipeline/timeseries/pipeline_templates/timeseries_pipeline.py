@@ -82,7 +82,7 @@ def create_pipeline(
             schema=schema_gen.outputs['schema'],
             preprocessing_fn=preprocessing_fn,
             custom_config=transformer_custom_config,
-            )
+    )
     components.append(transform)
 
     # Uses user-provided Python function that implements a model using TF-Learn.

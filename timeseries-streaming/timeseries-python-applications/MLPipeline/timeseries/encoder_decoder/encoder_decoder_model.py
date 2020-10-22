@@ -32,60 +32,60 @@ def build_keras_model(
     """
 
     print(
-        f'timesteps = {timesteps}, number_features = {number_features}, '
-        f' outer_units = {outer_units}, inner_units = {inner_units}')
+            f'timesteps = {timesteps}, number_features = {number_features}, '
+            f' outer_units = {outer_units}, inner_units = {inner_units}')
 
     visible = keras.layers.Input(shape=(timesteps, number_features))
 
     hidden = keras.layers.LSTM(
-        outer_units,
-        activation='selu',
-        recurrent_dropout=0.05,
-        return_sequences=True,
-        kernel_initializer='he_uniform')(
-        visible)
+            outer_units,
+            activation='selu',
+            recurrent_dropout=0.05,
+            return_sequences=True,
+            kernel_initializer='he_uniform')(
+                    visible)
     hidden = keras.layers.BatchNormalization()(hidden)
 
     hidden = keras.layers.LSTM(
-        inner_units,
-        activation='selu',
-        return_sequences=False,
-        kernel_initializer='he_uniform')(
-        hidden)
+            inner_units,
+            activation='selu',
+            return_sequences=False,
+            kernel_initializer='he_uniform')(
+                    hidden)
     hidden = keras.layers.BatchNormalization()(hidden)
 
     hidden = keras.layers.RepeatVector(timesteps)(hidden)
 
     hidden = keras.layers.LSTM(
-        inner_units,
-        activation='selu',
-        return_sequences=True,
-        kernel_initializer='he_uniform')(
-        hidden)
+            inner_units,
+            activation='selu',
+            return_sequences=True,
+            kernel_initializer='he_uniform')(
+                    hidden)
     hidden = keras.layers.BatchNormalization()(hidden)
 
     hidden = keras.layers.LSTM(
-        outer_units,
-        activation='selu',
-        return_sequences=True,
-        kernel_initializer='he_uniform')(
-        hidden)
+            outer_units,
+            activation='selu',
+            return_sequences=True,
+            kernel_initializer='he_uniform')(
+                    hidden)
     hidden = keras.layers.BatchNormalization()(hidden)
 
     output = keras.layers.TimeDistributed(keras.layers.Dense(number_features))(
-        hidden)
+            hidden)
 
     model = Model(inputs=visible, outputs=output)
 
     optimizer = keras.optimizers.Adam()
 
     model.compile(
-        metrics=[
-            tf.keras.metrics.MeanAbsoluteError(
-                name='mean_absolute_error')
-        ],
-        loss='mean_squared_error',
-        optimizer=optimizer)
+            metrics=[
+                    tf.keras.metrics.MeanAbsoluteError(
+                            name='mean_absolute_error')
+            ],
+            loss='mean_squared_error',
+            optimizer=optimizer)
 
     model.summary(print_fn=absl.logging.info)
 

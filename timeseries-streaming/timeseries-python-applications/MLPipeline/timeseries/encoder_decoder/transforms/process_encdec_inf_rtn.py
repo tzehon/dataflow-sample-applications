@@ -54,8 +54,13 @@ class ProcessReturn(beam.DoFn):
         for prediction in self.process_result(self.batch):
             yield prediction
 
-    def process(self, element: prediction_log_pb2.PredictionLog, window=beam.DoFn.WindowParam,
-                timestamp=beam.DoFn.TimestampParam, *args, **kwargs):
+    def process(
+            self,
+            element: prediction_log_pb2.PredictionLog,
+            window=beam.DoFn.WindowParam,
+            timestamp=beam.DoFn.TimestampParam,
+            *args,
+            **kwargs):
         if len(element.predict_log.request.inputs['examples'].string_val) > 1:
             raise Exception("Only support single input string.")
 
@@ -66,9 +71,7 @@ class ProcessReturn(beam.DoFn):
         else:
             self.batch.append(WindowedValue(element, timestamp, [window]))
 
-    def process_result(
-            self,
-            element: [WindowedValue]):
+    def process_result(self, element: [WindowedValue]):
         """
         A input example has shape : [timesteps, all_features] all_features is not always == to features used in model.
         An output example has shape : [timesteps, model_features]
@@ -85,15 +88,15 @@ class ProcessReturn(beam.DoFn):
         request_outputs = []
 
         for k in element_value:
-            request_inputs.append(k.predict_log.request.inputs['examples'].string_val[0])
+            request_inputs.append(
+                    k.predict_log.request.inputs['examples'].string_val[0])
             request_outputs.append(k.predict_log.response.outputs['output_0'])
-
         """
         The output of tf.io.parse_example is a set of feature tensors which have shape for non Metadata of [batch,timestep]
         """
 
-        batched_example = tf.io.parse_example(request_inputs, self.transform_output.raw_feature_spec())
-
+        batched_example = tf.io.parse_example(
+                request_inputs, self.transform_output.raw_feature_spec())
         """
         The tft layer gives us two labels 'FLOAT32' and 'LABEL' which have shape [batch, timestep, model_features]
         """
@@ -102,28 +105,29 @@ class ProcessReturn(beam.DoFn):
 
         # Determine which of the features was used in the model
         feature_labels = timeseries_transform_utils.create_feature_list_from_list(
-            features=batched_example.keys(),
-            config=self.config)
-
+                features=batched_example.keys(), config=self.config)
         """
         The outer loop gives us the batch label which has shape [timestep, model_features] 
         For the metadata the shape is [timestep, 1]
         """
 
-        metadata_span_start_timestamp = tf.sparse.to_dense(batched_example['METADATA_SPAN_START_TS']).numpy()
-        metadata_span_end_timestamp = tf.sparse.to_dense(batched_example['METADATA_SPAN_END_TS']).numpy()
+        metadata_span_start_timestamp = tf.sparse.to_dense(
+                batched_example['METADATA_SPAN_START_TS']).numpy()
+        metadata_span_end_timestamp = tf.sparse.to_dense(
+                batched_example['METADATA_SPAN_END_TS']).numpy()
 
         batch_pos = 0
         for batch_input in inputs['LABEL'].numpy():
             # Get the Metadata from the original request
-            span_start_timestamp = datetime.fromtimestamp(metadata_span_start_timestamp[batch_pos][0] / 1000)
-            span_end_timestamp = datetime.fromtimestamp(metadata_span_end_timestamp[batch_pos][0] / 1000)
+            span_start_timestamp = datetime.fromtimestamp(
+                    metadata_span_start_timestamp[batch_pos][0] / 1000)
+            span_end_timestamp = datetime.fromtimestamp(
+                    metadata_span_end_timestamp[batch_pos][0] / 1000)
             # Add the metadata to the result
             result = {
-                'span_start_timestamp': span_start_timestamp,
-                'span_end_timestamp': span_end_timestamp
+                    'span_start_timestamp': span_start_timestamp,
+                    'span_end_timestamp': span_end_timestamp
             }
-
             """
             In this loop we need to compare the last timestep [timestep , model_feature] for the input and the output.
             We take the last value from each feature and compare the input and output
@@ -133,7 +137,8 @@ class ProcessReturn(beam.DoFn):
 
             # Get the output that matches this input
             results = tf.io.parse_tensor(
-                request_outputs[batch_pos].SerializeToString(), tf.float32).numpy()[0]
+                    request_outputs[batch_pos].SerializeToString(),
+                    tf.float32).numpy()[0]
 
             # Get the last timestep output model_features values
             last_timestep_output = batch_input[last_timestep_pos]
@@ -144,14 +149,18 @@ class ProcessReturn(beam.DoFn):
             for model_feature_pos in range(len(last_timestep_output)):
                 label = (feature_labels[model_feature_pos])
                 feature_results[label] = {
-                    'input_value': last_timestep_input[model_feature_pos],
-                    'output_value': last_timestep_output[model_feature_pos]
+                        'input_value': last_timestep_input[model_feature_pos],
+                        'output_value': last_timestep_output[model_feature_pos]
                 }
                 if not str(label).endswith('-TIMESTAMP'):
                     feature_results[label].update({
-                        # Outliers will effect the head of their array, so we need to keep the array
-                        # to show in the outlier detection.
-                        'raw_data_array': str(tf.sparse.to_dense(batched_example[label]).numpy()[batch_pos])})
+                            # Outliers will effect the head of their array, so we need to keep the array
+                            # to show in the outlier detection.
+                            'raw_data_array': str(
+                                    tf.sparse.to_dense(
+                                            batched_example[label]).numpy()
+                                    [batch_pos])
+                    })
 
             result.update({'feature_results': feature_results})
             processed_inputs.append(result)
@@ -161,7 +170,8 @@ class ProcessReturn(beam.DoFn):
         # Add back windows
         windowed_value = []
         for input_pos in range(len(processed_inputs) - 1):
-            windowed_value.append(element[input_pos].with_value(processed_inputs[input_pos]))
+            windowed_value.append(
+                    element[input_pos].with_value(processed_inputs[input_pos]))
         return windowed_value
 
 
@@ -177,8 +187,8 @@ class CheckAnomalous(beam.DoFn):
 
     def process(self, element: Dict[Text, Any], *unused_args, **unused_kwargs):
         result = {
-            'span_start_timestamp': element['span_start_timestamp'],
-            'span_end_timestamp': element['span_end_timestamp']
+                'span_start_timestamp': element['span_start_timestamp'],
+                'span_end_timestamp': element['span_end_timestamp']
         }
 
         for k, v in element['feature_results'].items():
